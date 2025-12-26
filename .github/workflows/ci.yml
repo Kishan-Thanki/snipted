@@ -25,17 +25,16 @@ jobs:
 
       - name: Run Pytest
         env:
-          DATABASE_URL: "postgresql://user:pass@localhost:5432/db"
-          SECRET_KEY: "test-secret-key-only-for-ci"
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          BACKEND_CORS_ORIGINS: ${{ secrets.BACKEND_CORS_ORIGINS }}
           ACCESS_TOKEN_EXPIRE_MINUTES: 30
-          BACKEND_CORS_ORIGINS: "http://localhost:3000"
         run: pytest
 
   docker-build:
-    needs: test 
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Build Docker Image
         run: docker build -t snipted-backend:latest .
