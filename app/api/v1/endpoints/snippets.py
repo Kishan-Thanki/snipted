@@ -155,6 +155,8 @@ def like_snippet(
     if not snippet:
         raise HTTPException(status_code=404, detail="Snippet not found")
 
+    owner = db.query(User).filter(User.id == snippet.user_id).first()
+
     existing_like = db.query(SnippetLike).filter(
         SnippetLike.user_id == current_user.id,
         SnippetLike.snippet_id == snippet_id
@@ -162,6 +164,8 @@ def like_snippet(
 
     if existing_like:
         db.delete(existing_like)
+        if owner and owner.reputation_stars > 0:
+            owner.reputation_stars -= 1 
         db.commit()
         return {"msg": "Unliked", "is_liked": False}
     else:
@@ -171,5 +175,7 @@ def like_snippet(
             liked_at=utc_now()
         )
         db.add(new_like)
+        if owner:
+            owner.reputation_stars += 1 
         db.commit()
         return {"msg": "Liked", "is_liked": True}
