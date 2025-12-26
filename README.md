@@ -1,5 +1,7 @@
 # Snipted API
 
+![CI Status](https://github.com/Kishan-Thanki/snipted/actions/workflows/ci.yml/badge.svg)
+
 A high-performance, secure backend for sharing code snippets. Built with **FastAPI**, **PostgreSQL (Supabase)**, and **Docker**.
 
 ## Features
