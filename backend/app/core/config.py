@@ -1,6 +1,7 @@
+import json
 from typing import List, Union
 from pydantic import field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
@@ -19,15 +20,20 @@ class Settings(BaseSettings):
             return v
         
         if isinstance(v, str) and v.startswith("["):
-            return v
+            try:
+                return json.loads(v)
+            except (json.JSONDecodeError, TypeError):
+                return []
             
-        if isinstance(v, str):
+        if isinstance(v, str) and v.strip():
             return [i.strip() for i in v.split(",")]
             
         return []
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore"
+    )
 
 settings = Settings()
