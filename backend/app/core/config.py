@@ -11,29 +11,33 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     DATABASE_URL: str
 
+    ENVIRONMENT: str = "development" 
+    
+    @property
+    def COOKIE_SECURE(self) -> bool:
+        return self.ENVIRONMENT.lower() == "production"
+
     BACKEND_CORS_ORIGINS: Union[List[str], str] = []
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
-        if isinstance(v, list):
-            return v
-        
+        if isinstance(v, list): return v
         if isinstance(v, str) and v.startswith("["):
-            try:
-                return json.loads(v)
-            except (json.JSONDecodeError, TypeError):
-                return []
-            
+            try: return json.loads(v)
+            except: return []
         if isinstance(v, str) and v.strip():
             return [i.strip() for i in v.split(",")]
-            
         return []
+    
+    @property
+    def COOKIE_SECURE(self) -> bool:
+        return self.ENVIRONMENT.lower() == "production"
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        case_sensitive=True,
-        extra="ignore"
-    )
+    @property
+    def COOKIE_SAMESITE(self) -> str:
+        return "none" if self.COOKIE_SECURE else "lax"
+
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
 settings = Settings()

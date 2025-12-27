@@ -12,19 +12,17 @@ from app.core.security import create_access_token, get_password_hash, verify_pas
 router = APIRouter()
 
 def set_auth_cookie(response: Response, token: str):
-    """
-    Helper to set the secure cookie consistently.
-    Updated for cross-site compatibility (Localhost -> Render).
-    """
     response.set_cookie(
         key="access_token",
         value=token,
-        httponly=True,   
-        max_age=1800,    
+        httponly=True,
+        max_age=1800,
         expires=1800,
-        samesite="none",  
-        secure=True     
+        samesite=settings.COOKIE_SAMESITE,
+        secure=settings.COOKIE_SECURE,
     )
+
+
 
 @router.post("/login", response_model=UserResponse)
 def login_access_token(
@@ -90,12 +88,9 @@ def register_user(
 
 @router.post("/logout")
 def logout(response: Response):
-    """
-    Logout by destroying the cookie.
-    """
     response.delete_cookie(
         key="access_token",
-        samesite="none",
-        secure=True
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE,
     )
     return {"message": "Logged out successfully"}
