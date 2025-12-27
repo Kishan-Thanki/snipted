@@ -25,7 +25,6 @@ def read_users(
     "/",
     response_model=UserResponse,
     status_code=201,
-    dependencies=[Depends(deps.validate_csrf)]
 )
 @limiter.limit("5/minute")
 def create_user(

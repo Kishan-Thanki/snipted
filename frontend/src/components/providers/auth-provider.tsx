@@ -4,10 +4,6 @@ import { useEffect, ReactNode } from 'react';
 import { api } from '@/lib/api/client';
 import { useAuth } from '@/lib/store/auth.store';
 
-interface AuthProviderProps {
-    children: ReactNode;
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
     const { setAuth } = useAuth();
 
@@ -15,13 +11,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const initAuth = async () => {
             try {
                 const response = await api.get('/users/me');
-
                 setAuth(response.data);
             } catch (error) {
                 setAuth(null);
+
+                await api.get('/auth/csrf').catch(() => { });
             }
         };
-
         initAuth();
     }, [setAuth]);
 

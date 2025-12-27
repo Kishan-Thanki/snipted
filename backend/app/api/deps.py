@@ -16,24 +16,19 @@ def get_db() -> Generator:
 
 def get_current_user(
     request: Request,
-    db: Session = Depends(get_db), # Use this db!
+    db: Session = Depends(get_db),
     authorization: Optional[str] = Header(None),
 ) -> User:
     token: Optional[str] = None
-    
-    # 1. Check Header first (common for mobile/testing)
     if authorization and authorization.startswith("Bearer "):
         token = authorization.replace("Bearer ", "")
-    
-    # 2. Check Cookies (common for web frontend)
     if not token:
         token = request.cookies.get("access_token")
     
     if not token:
-        # Match the exact detail string your tests expect
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, 
-            detail="Not authenticated (Missing Cookie or Token)"
+            detail="Not authenticated"
         )
 
     try:
@@ -44,7 +39,6 @@ def get_current_user(
     except JWTError:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
-    # FIX: Use the injected 'db' session, NOT SessionLocal()
     user = db.query(User).filter(User.email == email).first()
     
     if not user:
@@ -55,16 +49,13 @@ def get_current_user(
     return user
 
 def validate_csrf(request: Request, x_csrf_token: str = Header(None)):
-    """
-    Implements Double Submit Cookie pattern for CSRF protection.
-    Bypasses during testing to allow standard API tests to pass.
-    """
     current_env = str(settings.ENVIRONMENT).lower().strip()
     
     if current_env == "testing":
         return True
         
     csrf_cookie = request.cookies.get("csrf_token")
+    
     if not csrf_cookie or csrf_cookie != x_csrf_token:
         raise HTTPException(
             status_code=403, 

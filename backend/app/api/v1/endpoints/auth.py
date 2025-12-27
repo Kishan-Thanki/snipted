@@ -76,7 +76,6 @@ def login_access_token(
     "/register",
     status_code=201,
     response_model=UserResponse,
-    dependencies=[Depends(deps.validate_csrf)]
 )
 @limiter.limit("3/minute")
 def register_user(
@@ -157,3 +156,19 @@ def refresh_token_endpoint(
 
     set_auth_cookies(response, access_token, new_refresh_token, csrf_token)
     return user
+
+@router.get("/csrf")
+def get_csrf_token_handshake(request: Request, response: Response):
+    """
+    Sets the initial CSRF cookie for guests so their first 
+    mutating request (like register/login) can work smoothly.
+    """
+    token = generate_csrf_token()
+    response.set_cookie(
+        key="csrf_token",
+        value=token,
+        httponly=False, 
+        samesite=settings.COOKIE_SAMESITE,
+        secure=settings.COOKIE_SECURE,
+    )
+    return {"detail": "CSRF cookie set"}
