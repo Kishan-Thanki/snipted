@@ -14,8 +14,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setAuth(response.data);
             } catch (error) {
                 setAuth(null);
-
-                await api.get('/auth/csrf').catch(() => { });
+                await api.get('/auth/csrf');
             }
         };
         initAuth();

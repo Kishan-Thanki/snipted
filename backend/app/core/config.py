@@ -28,11 +28,13 @@ class Settings(BaseSettings):
 
     @property
     def COOKIE_SECURE(self) -> bool:
-        return self.ENVIRONMENT.lower() == "production"
+        return self.ENVIRONMENT.lower() in ["production", "staging"]
 
     @property
     def COOKIE_SAMESITE(self) -> str:
-        return "none" if self.COOKIE_SECURE else "lax"
+        if self.COOKIE_SECURE:
+            return "none" 
+        return "lax"      
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
