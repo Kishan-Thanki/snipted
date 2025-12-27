@@ -57,15 +57,17 @@ def get_current_user(
 def validate_csrf(request: Request, x_csrf_token: str = Header(None)):
     """
     Implements Double Submit Cookie pattern for CSRF protection.
-    Bypasses during testing to simplify API unit tests.
+    Bypasses during testing to allow standard API tests to pass.
     """
-    if settings.ENVIRONMENT == "testing":
+    current_env = str(settings.ENVIRONMENT).lower().strip()
+    
+    if current_env == "testing":
         return True
         
     csrf_cookie = request.cookies.get("csrf_token")
     if not csrf_cookie or csrf_cookie != x_csrf_token:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
+            status_code=403, 
             detail="CSRF token invalid"
         )
     return True

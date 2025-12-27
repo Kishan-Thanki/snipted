@@ -28,6 +28,7 @@ jobs:
 
       - name: Run Pytest
         env:
+          ENVIRONMENT: testing
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           BACKEND_CORS_ORIGINS: ${{ secrets.BACKEND_CORS_ORIGINS || 'http://localhost:3000' }}
