@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* If you want to customize your theme (like we did in the previous step), 
+   do it inside the @theme block like this: */
+@theme {
+  --color-background: #f0f2f5;
+  --color-foreground: #1a1a1b;
+  --color-card: #ffffff;
+  --color-border: #d7dadc;
+  --color-primary: #0079d3;
+}
+
+/* Any custom base styles should be wrapped in @layer base */
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    @apply antialiased;
+  }
+}
+
+/* Custom community components */
+@layer components {
+  .community-card {
+    background-color: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 0.375rem;
+    padding: 1rem;
+    transition: border-color 0.2s;
+  }
+
+  .community-card:hover {
+    border-color: #a5a5a5;
+  }
+}
