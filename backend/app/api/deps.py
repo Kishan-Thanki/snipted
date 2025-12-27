@@ -48,14 +48,21 @@ def get_current_user(
     
     return user
 
-def validate_csrf(request: Request, x_csrf_token: str = Header(None)):
+def validate_csrf(
+    request: Request, 
+    x_csrf_token: str = Header(None, alias="X-CSRF-Token") 
+):
     current_env = str(settings.ENVIRONMENT).lower().strip()
-    
     if current_env == "testing":
         return True
         
     csrf_cookie = request.cookies.get("csrf_token")
     
+    if not x_csrf_token:
+        print(f"DEBUG: Missing X-CSRF-Token Header")
+    if not csrf_cookie:
+        print(f"DEBUG: Missing csrf_token Cookie")
+
     if not csrf_cookie or csrf_cookie != x_csrf_token:
         raise HTTPException(
             status_code=403, 

@@ -24,10 +24,10 @@ const getCookie = (name: string) => {
 
 api.interceptors.request.use((config) => {
   const token = getCookie('csrf_token');
+
   if (token) {
     config.headers['X-CSRF-Token'] = token;
   }
+
   return config;
-}, (error) => {
-  return Promise.reject(error);
 });
