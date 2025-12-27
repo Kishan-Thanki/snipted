@@ -22,6 +22,12 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+def create_refresh_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire, "refresh": True}) 
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Checks if the password matches the hash"""
     return pwd_context.verify(plain_password, hashed_password)

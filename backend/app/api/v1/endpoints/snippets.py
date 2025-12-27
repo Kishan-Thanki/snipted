@@ -19,20 +19,22 @@ def normalize_tag(tag: str) -> str:
     return tag.strip().lower()
 
 
-# ==========================
 # CREATE SNIPPET
-# ==========================
-@router.post("/", response_model=SnippetResponse, status_code=201)
+@router.post(
+    "/",
+    response_model=SnippetResponse,
+    status_code=201,
+    dependencies=[Depends(deps.validate_csrf)]
+)
 @limiter.limit("5/minute")
 def create_snippet(
     request: Request,
     *,
     db: Session = Depends(deps.get_db),
     snippet_in: SnippetCreate,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user)
 ) -> Any:
     tag_objects: List[Tag] = []
-
     for tag_name in snippet_in.tags:
         normalized = normalize_tag(tag_name)
         tag = db.query(Tag).filter(Tag.name == normalized).first()
@@ -49,9 +51,8 @@ def create_snippet(
         user_id=current_user.id,
         created_at=utc_now(),
         updated_at=utc_now(),
+        tags=tag_objects
     )
-
-    snippet.tags = tag_objects
 
     db.add(snippet)
     db.commit()
@@ -59,90 +60,83 @@ def create_snippet(
     return snippet
 
 
-# ==========================
-# READ SNIPPETS (LIST)
-# ==========================
+# READ SNIPPETS
 @router.get("/", response_model=List[SnippetResponse])
+@limiter.limit("20/minute")
 def read_snippets(
+    request: Request,
+    *,
     skip: int = 0,
     limit: int = Query(default=10, le=100),
     tag: Optional[str] = None,
     q: Optional[str] = None,
-    db: Session = Depends(deps.get_db),
+    db: Session = Depends(deps.get_db)
 ) -> Any:
     query = db.query(Snippet)
-
     if tag:
         normalized_tag = normalize_tag(tag)
         query = query.join(Snippet.tags).filter(Tag.name == normalized_tag)
-
     if q:
         query = query.filter(
-            or_(
-                Snippet.title.ilike(f"%{q}%"),
-                Snippet.code_content.ilike(f"%{q}%"),
-            )
+            or_(Snippet.title.ilike(f"%{q}%"), Snippet.code_content.ilike(f"%{q}%"))
         )
-
-    return (
-        query.order_by(Snippet.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+    return query.order_by(Snippet.created_at.desc()).offset(skip).limit(limit).all()
 
 
-# ==========================
-# SEARCH (EXPLICIT ENDPOINT)
-# ==========================
+# SEARCH SNIPPETS
 @router.get("/search", response_model=List[SnippetResponse])
+@limiter.limit("20/minute")
 def search_snippets(
+    request: Request,
+    *,
     q: str = Query(..., min_length=1),
-    db: Session = Depends(deps.get_db),
+    db: Session = Depends(deps.get_db)
 ) -> Any:
     return (
         db.query(Snippet)
-        .filter(
-            or_(
-                Snippet.title.ilike(f"%{q}%"),
-                Snippet.code_content.ilike(f"%{q}%"),
-            )
-        )
+        .filter(or_(Snippet.title.ilike(f"%{q}%"), Snippet.code_content.ilike(f"%{q}%")))
         .order_by(Snippet.created_at.desc())
         .all()
     )
 
 
-# ==========================
 # READ SINGLE SNIPPET
-# ==========================
 @router.get("/{snippet_id}", response_model=SnippetResponse)
-def read_snippet(snippet_id: int, db: Session = Depends(deps.get_db)):
+@limiter.limit("20/minute")
+def read_snippet(
+    request: Request,
+    *,
+    snippet_id: int,
+    db: Session = Depends(deps.get_db)
+) -> Any:
     snippet = db.query(Snippet).filter(Snippet.id == snippet_id).first()
     if not snippet:
         raise HTTPException(status_code=404, detail="Snippet not found")
     return snippet
 
 
-# ==========================
 # UPDATE SNIPPET
-# ==========================
-@router.put("/{snippet_id}", response_model=SnippetResponse)
+@router.put(
+    "/{snippet_id}",
+    response_model=SnippetResponse,
+    dependencies=[Depends(deps.validate_csrf)]
+)
+@limiter.limit("5/minute")
 def update_snippet(
+    request: Request,
+    *,
     snippet_id: int,
     snippet_in: SnippetUpdate,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user)
 ) -> Any:
     snippet = db.query(Snippet).filter(Snippet.id == snippet_id).first()
     if not snippet:
         raise HTTPException(status_code=404, detail="Snippet not found")
-
     if snippet.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
     update_data = snippet_in.model_dump(exclude_unset=True)
-
     if "tags" in update_data:
         tag_objects: List[Tag] = []
         for tag_name in update_data["tags"]:
@@ -153,7 +147,6 @@ def update_snippet(
                 db.add(tag)
                 db.flush()
             tag_objects.append(tag)
-
         snippet.tags = tag_objects
         del update_data["tags"]
 
@@ -166,20 +159,23 @@ def update_snippet(
     return snippet
 
 
-# ==========================
 # DELETE SNIPPET
-# ==========================
-@router.delete("/{snippet_id}", status_code=204)
+@router.delete(
+    "/{snippet_id}",
+    status_code=204,
+    dependencies=[Depends(deps.validate_csrf)]
+)
+@limiter.limit("5/minute")
 def delete_snippet(
+    request: Request,
+    *,
     snippet_id: int,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user)
 ):
     snippet = db.query(Snippet).filter(Snippet.id == snippet_id).first()
-
     if not snippet:
         raise HTTPException(status_code=404, detail="Snippet not found")
-
     if snippet.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
@@ -188,14 +184,18 @@ def delete_snippet(
     return None
 
 
-# ==========================
 # LIKE / UNLIKE SNIPPET
-# ==========================
-@router.post("/{snippet_id}/like")
+@router.post(
+    "/{snippet_id}/like",
+    dependencies=[Depends(deps.validate_csrf)]
+)
+@limiter.limit("10/minute")
 def like_snippet(
+    request: Request,
+    *,
     snippet_id: int,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user)
 ):
     snippet = db.query(Snippet).filter(Snippet.id == snippet_id).first()
     if not snippet:
@@ -204,10 +204,7 @@ def like_snippet(
     owner = db.query(User).filter(User.id == snippet.user_id).first()
     existing_like = (
         db.query(SnippetLike)
-        .filter(
-            SnippetLike.user_id == current_user.id,
-            SnippetLike.snippet_id == snippet_id,
-        )
+        .filter(SnippetLike.user_id == current_user.id, SnippetLike.snippet_id == snippet_id)
         .first()
     )
 
@@ -218,13 +215,7 @@ def like_snippet(
         db.commit()
         return {"is_liked": False}
 
-    db.add(
-        SnippetLike(
-            user_id=current_user.id,
-            snippet_id=snippet_id,
-            liked_at=utc_now(),
-        )
-    )
+    db.add(SnippetLike(user_id=current_user.id, snippet_id=snippet_id, liked_at=utc_now()))
     if owner:
         owner.reputation_stars += 1
     db.commit()

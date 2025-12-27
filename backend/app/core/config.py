@@ -9,13 +9,9 @@ class Settings(BaseSettings):
     
     SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     DATABASE_URL: str
-
     ENVIRONMENT: str = "development" 
-    
-    @property
-    def COOKIE_SECURE(self) -> bool:
-        return self.ENVIRONMENT.lower() == "production"
 
     BACKEND_CORS_ORIGINS: Union[List[str], str] = []
 
@@ -29,7 +25,7 @@ class Settings(BaseSettings):
         if isinstance(v, str) and v.strip():
             return [i.strip() for i in v.split(",")]
         return []
-    
+
     @property
     def COOKIE_SECURE(self) -> bool:
         return self.ENVIRONMENT.lower() == "production"

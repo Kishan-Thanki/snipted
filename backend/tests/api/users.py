@@ -12,12 +12,10 @@ def test_create_user(client: TestClient):
     assert "password" not in data  
 
 def test_create_user_duplicate_email(client: TestClient):
-    # 1. Create first user
     client.post(
         "/api/v1/users/",
         json={"email": "dup@example.com", "username": "u1", "password": "p1"},
     )
-    # 2. Try creating same email again
     response = client.post(
         "/api/v1/users/",
         json={"email": "dup@example.com", "username": "u2", "password": "p2"},
@@ -26,7 +24,6 @@ def test_create_user_duplicate_email(client: TestClient):
     assert "already exists" in response.json()["detail"]
 
 def test_read_users_me(client: TestClient, normal_user_token_headers):
-    # Test the Protected Endpoint using the token fixture
     response = client.get("/api/v1/users/me", headers=normal_user_token_headers)
     assert response.status_code == 200
     assert response.json()["email"] == "test@example.com"
